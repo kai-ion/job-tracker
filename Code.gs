@@ -79,17 +79,15 @@ function setup() {
 
   // Set headers if empty
   if (sheet.getLastRow() === 0) {
-    const headers = ["Company", "Role", "Date Applied", "Status", "Date Updated", "Email Subject", "Source"];
+    const headers = ["Company", "Role", "Date", "Rejection", "Interview Stage"];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
-    sheet.setColumnWidth(1, 180); // Company
+    sheet.setColumnWidth(1, 200); // Company
     sheet.setColumnWidth(2, 220); // Role
-    sheet.setColumnWidth(3, 110); // Date Applied
-    sheet.setColumnWidth(4, 100); // Status
-    sheet.setColumnWidth(5, 110); // Date Updated
-    sheet.setColumnWidth(6, 300); // Email Subject
-    sheet.setColumnWidth(7, 120); // Source
+    sheet.setColumnWidth(3, 110); // Date
+    sheet.setColumnWidth(4, 100); // Rejection
+    sheet.setColumnWidth(5, 150); // Interview Stage
   }
 
   // Create time trigger (every 5 min)
@@ -240,20 +238,17 @@ function extractSource_(from, body) {
 // ============================================================
 
 function addApplication_(sheet, info, messageId) {
-  const existing = findRow_(sheet, info.company, info.role);
+  const existing = findRow_(sheet, info.company);
   if (existing) return; // Already tracked
 
   sheet.appendRow([
     info.company,
     info.role,
     Utilities.formatDate(info.date, Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    "Applied",
-    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    info.subject,
-    info.source,
+    "",          // Rejection (empty = not rejected)
+    "Applied",   // Interview Stage
   ]);
 
-  // Store message ID in a hidden column or script properties to avoid reprocessing
   markProcessed_(messageId);
 }
 
@@ -261,11 +256,11 @@ function updateStatus_(sheet, company, status, messageId, subject) {
   const data = sheet.getDataRange().getValues();
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toLowerCase() === company.toLowerCase() && data[i][3] !== "Rejected") {
-      sheet.getRange(i + 1, 4).setValue(status); // Status column
-      sheet.getRange(i + 1, 5).setValue(
-        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd")
-      ); // Date Updated
+    if (data[i][0].toLowerCase() === company.toLowerCase() && !data[i][3]) {
+      // Column D = Rejection, Column E = Interview Stage
+      if (status === "Rejected") {
+        sheet.getRange(i + 1, 4).setValue("Yes"); // Rejection = Yes
+      }
       markProcessed_(messageId);
       return;
     }
@@ -274,23 +269,19 @@ function updateStatus_(sheet, company, status, messageId, subject) {
   // If no existing row found, add as a new rejected entry
   sheet.appendRow([
     company,
-    "",
-    "",
-    status,
+    "",     // Role unknown from rejection email
     Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    subject,
-    "",
+    "Yes",  // Rejection
+    "",     // Interview Stage unknown
   ]);
   markProcessed_(messageId);
 }
 
-function findRow_(sheet, company, role) {
+function findRow_(sheet, company) {
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0].toLowerCase() === company.toLowerCase()) {
-      if (!role || data[i][1].toLowerCase() === role.toLowerCase()) {
-        return i + 1; // 1-indexed row
-      }
+      return i + 1;
     }
   }
   return null;
@@ -341,8 +332,8 @@ function getOrCreateSheet_() {
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(["Company", "Role", "Date Applied", "Status", "Date Updated", "Email Subject", "Source"]);
-    sheet.getRange(1, 1, 1, 7).setFontWeight("bold");
+    sheet.appendRow(["Company", "Role", "Date", "Rejection", "Interview Stage"]);
+    sheet.getRange(1, 1, 1, 5).setFontWeight("bold");
     sheet.setFrozenRows(1);
   }
   return sheet;
@@ -416,17 +407,15 @@ function manualAdd() {
   const company = ui.prompt("Company name:").getResponseText();
   if (!company) return;
   const role = ui.prompt("Role/Title:").getResponseText();
-  const source = ui.prompt("Source (LinkedIn, Direct, etc):").getResponseText() || "Direct";
+  const stage = ui.prompt("Interview stage (Applied, Phone Screen, Onsite, etc):").getResponseText() || "Applied";
 
   const sheet = getOrCreateSheet_();
   sheet.appendRow([
     company,
     role,
     Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    "Applied",
-    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    "(manual entry)",
-    source,
+    "",     // Rejection
+    stage,
   ]);
 }
 
