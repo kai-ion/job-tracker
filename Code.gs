@@ -171,19 +171,32 @@ function extractCompany_(from, subject, body) {
   const domainMatch = from.match(/@([a-z0-9-]+)\./i);
   if (domainMatch) {
     const domain = domainMatch[1].toLowerCase();
-    // Skip generic email providers
+    // Skip generic email providers and ATS platforms
     const generic = ["gmail", "yahoo", "outlook", "hotmail", "greenhouse", "lever", "ashby",
                      "smartrecruiters", "workday", "icims", "jobvite", "myworkdayjobs",
-                     "successfactors", "taleo", "brassring"];
+                     "successfactors", "taleo", "brassring", "google", "icloud"];
     if (!generic.includes(domain)) {
       return capitalize_(domain);
     }
   }
 
-  // Try "at [Company]" or "with [Company]" pattern in subject/body
-  const atMatch = (subject + " " + body).match(/(?:at|with|from|to)\s+([A-Z][A-Za-z0-9\s&.]+?)(?:\s+for|\s+as|\s*[,.\n!])/);
-  if (atMatch) {
-    return atMatch[1].trim();
+  const text = subject + "\n" + body;
+
+  // Try "at [Company]" patterns — stop at common sentence continuations
+  const atPatterns = [
+    /(?:application (?:at|to|for))\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\s+for|\s+has|\s+was|\.|,|\n|!|\s+and\b)/,
+    /(?:at|with)\s+([A-Z][A-Za-z0-9&.-]+)(?:\s|\.|\,|\n|!|$)/,
+    /(?:from)\s+([A-Z][A-Za-z0-9&.-]+?)(?:\s+regarding|\s+about|\.|,|\n|!|$)/,
+  ];
+  for (const pattern of atPatterns) {
+    const match = text.match(pattern);
+    if (match && match[1].trim().length > 1 && match[1].trim().length < 40) {
+      // Reject matches that are common words, not company names
+      const reject = ["this", "that", "the", "our", "your", "unfortunately", "time"];
+      if (!reject.includes(match[1].trim().toLowerCase())) {
+        return match[1].trim();
+      }
+    }
   }
 
   // Try the display name from the From field
@@ -191,7 +204,7 @@ function extractCompany_(from, subject, body) {
   if (nameMatch) {
     let name = nameMatch[1].trim();
     // Remove common suffixes like "Careers", "Recruiting", "Talent"
-    name = name.replace(/\s*(Careers|Recruiting|Talent|HR|Jobs|Hiring)\s*$/i, "").trim();
+    name = name.replace(/\s*(Careers|Recruiting|Talent|HR|Jobs|Hiring|Team)\s*$/i, "").trim();
     if (name.length > 2 && name.length < 50) {
       return name;
     }
@@ -257,16 +270,29 @@ function addApplication_(sheet, info, messageId) {
 function updateStatus_(sheet, company, status, messageId, subject) {
   const data = sheet.getDataRange().getValues();
   const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const companyLower = company.toLowerCase();
 
+  // Find matching row: exact match first, then contains match
+  let matchRow = -1;
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toLowerCase() === company.toLowerCase() && !data[i][3]) {
-      if (status === "Rejected") {
-        sheet.getRange(i + 1, 4).setValue("Yes");   // Rejection
-        sheet.getRange(i + 1, 5).setValue(today);   // Date Rejected
-      }
-      markProcessed_(messageId);
-      return;
+    if (data[i][3]) continue; // Already rejected, skip
+    const rowCompany = String(data[i][0]).toLowerCase();
+    if (rowCompany === companyLower) {
+      matchRow = i;
+      break;
     }
+    // Fuzzy: one contains the other (handles "TestCompany" vs "Testcompany Inc")
+    if (rowCompany.includes(companyLower) || companyLower.includes(rowCompany)) {
+      matchRow = i;
+      break;
+    }
+  }
+
+  if (matchRow >= 0 && status === "Rejected") {
+    sheet.getRange(matchRow + 1, 4).setValue("Yes");   // Rejection
+    sheet.getRange(matchRow + 1, 5).setValue(today);   // Date Rejected
+    markProcessed_(messageId);
+    return;
   }
 
   // If no existing row found, add as a new rejected entry
