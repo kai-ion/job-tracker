@@ -29,14 +29,15 @@ const APPLICATION_QUERIES = [
   'subject:"thanks for applying" newer_than:1d',
 ];
 
-// Gmail search queries for rejections
+// Gmail search queries for rejections (search body too, not just subject,
+// because rejections often come as replies in the application thread)
 const REJECTION_QUERIES = [
-  'subject:"unfortunately" newer_than:1d',
-  'subject:"we will not be moving forward" newer_than:1d',
-  'subject:"not moving forward" newer_than:1d',
-  'subject:"decided to move forward with other" newer_than:1d',
-  'subject:"position has been filled" newer_than:1d',
-  'subject:"after careful consideration" newer_than:1d',
+  '"unfortunately" newer_than:1d',
+  '"we will not be moving forward" newer_than:1d',
+  '"not moving forward" newer_than:1d',
+  '"decided to move forward with other" newer_than:1d',
+  '"position has been filled" newer_than:1d',
+  '"after careful consideration" newer_than:1d',
   'subject:"update on your application" newer_than:1d',
 ];
 
@@ -190,11 +191,13 @@ function extractCompany_(from, subject, body) {
   ];
   for (const pattern of atPatterns) {
     const match = text.match(pattern);
-    if (match && match[1].trim().length > 1 && match[1].trim().length < 40) {
-      // Reject matches that are common words, not company names
-      const reject = ["this", "that", "the", "our", "your", "unfortunately", "time"];
-      if (!reject.includes(match[1].trim().toLowerCase())) {
-        return match[1].trim();
+    if (match) {
+      let name = match[1].trim().replace(/[.\s]+$/, ""); // Strip trailing periods/spaces
+      if (name.length > 1 && name.length < 40) {
+        const reject = ["this", "that", "the", "our", "your", "unfortunately", "time"];
+        if (!reject.includes(name.toLowerCase())) {
+          return name;
+        }
       }
     }
   }
