@@ -79,7 +79,7 @@ function setup() {
 
   // Set headers if empty
   if (sheet.getLastRow() === 0) {
-    const headers = ["Company", "Role", "Date", "Rejection", "Interview Stage"];
+    const headers = ["Company", "Role", "Date", "Rejection", "Date Rejected", "Interview Stage"];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
@@ -87,7 +87,8 @@ function setup() {
     sheet.setColumnWidth(2, 220); // Role
     sheet.setColumnWidth(3, 110); // Date
     sheet.setColumnWidth(4, 100); // Rejection
-    sheet.setColumnWidth(5, 150); // Interview Stage
+    sheet.setColumnWidth(5, 120); // Date Rejected
+    sheet.setColumnWidth(6, 150); // Interview Stage
   }
 
   // Create time trigger (every 5 min)
@@ -245,7 +246,8 @@ function addApplication_(sheet, info, messageId) {
     info.company,
     info.role,
     Utilities.formatDate(info.date, Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    "",          // Rejection (empty = not rejected)
+    "",          // Rejection
+    "",          // Date Rejected
     "Applied",   // Interview Stage
   ]);
 
@@ -254,12 +256,13 @@ function addApplication_(sheet, info, messageId) {
 
 function updateStatus_(sheet, company, status, messageId, subject) {
   const data = sheet.getDataRange().getValues();
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0].toLowerCase() === company.toLowerCase() && !data[i][3]) {
-      // Column D = Rejection, Column E = Interview Stage
       if (status === "Rejected") {
-        sheet.getRange(i + 1, 4).setValue("Yes"); // Rejection = Yes
+        sheet.getRange(i + 1, 4).setValue("Yes");   // Rejection
+        sheet.getRange(i + 1, 5).setValue(today);   // Date Rejected
       }
       markProcessed_(messageId);
       return;
@@ -269,10 +272,11 @@ function updateStatus_(sheet, company, status, messageId, subject) {
   // If no existing row found, add as a new rejected entry
   sheet.appendRow([
     company,
-    "",     // Role unknown from rejection email
-    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
-    "Yes",  // Rejection
-    "",     // Interview Stage unknown
+    "",      // Role unknown
+    "",      // Date applied unknown
+    "Yes",   // Rejection
+    today,   // Date Rejected
+    "",      // Interview Stage unknown
   ]);
   markProcessed_(messageId);
 }
@@ -332,8 +336,8 @@ function getOrCreateSheet_() {
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(["Company", "Role", "Date", "Rejection", "Interview Stage"]);
-    sheet.getRange(1, 1, 1, 5).setFontWeight("bold");
+    sheet.appendRow(["Company", "Role", "Date", "Rejection", "Date Rejected", "Interview Stage"]);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold");
     sheet.setFrozenRows(1);
   }
   return sheet;
@@ -415,6 +419,7 @@ function manualAdd() {
     role,
     Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
     "",     // Rejection
+    "",     // Date Rejected
     stage,
   ]);
 }
