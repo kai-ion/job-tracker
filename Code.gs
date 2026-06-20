@@ -139,13 +139,15 @@ function processNewEmails() {
     const threads = GmailApp.search(query, 0, 20);
     for (const thread of threads) {
       for (const msg of thread.getMessages()) {
-        if (processed.has(msg.getId())) continue;
+        const msgId = msg.getId();
+        if (processed.has(msgId)) continue;
+        processed.add(msgId); // Mark immediately to prevent duplicates within same run
 
         const body = msg.getPlainBody();
         if (isApplicationEmail_(body)) {
           const info = extractApplicationInfo_(msg);
           if (info.company) {
-            addApplication_(sheet, info, msg.getId());
+            addApplication_(sheet, info, msgId);
           }
         }
       }
@@ -157,13 +159,15 @@ function processNewEmails() {
     const threads = GmailApp.search(query, 0, 20);
     for (const thread of threads) {
       for (const msg of thread.getMessages()) {
-        if (processed.has(msg.getId())) continue;
+        const msgId = msg.getId();
+        if (processed.has(msgId)) continue;
+        processed.add(msgId);
 
         const body = msg.getPlainBody();
         if (isRejectionEmail_(body)) {
           const info = extractApplicationInfo_(msg);
           if (info.company) {
-            updateStatus_(sheet, info.company, "Rejected", msg.getId(), msg.getSubject());
+            updateStatus_(sheet, info.company, "Rejected", msgId, msg.getSubject());
           }
         }
       }
