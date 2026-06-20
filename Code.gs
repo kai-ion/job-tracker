@@ -24,12 +24,16 @@ const CHECK_INTERVAL_MINUTES = 5;
 const APPLICATION_QUERIES = [
   '"thank you for applying" newer_than:2d',
   '"thanks for applying" newer_than:2d',
+  '"thank you for your application" newer_than:2d',
+  '"thank you for including" newer_than:2d',
   '"application received" newer_than:2d',
   '"received your application" newer_than:2d',
   '"application has been received" newer_than:2d',
   '"application confirmation" newer_than:2d',
   '"application submitted" newer_than:2d',
   '"we received your application" newer_than:2d',
+  '"review your application" newer_than:2d',
+  '"carefully review your application" newer_than:2d',
   '"excited to learn more about you" newer_than:2d',
   '"in the process of reviewing" newer_than:2d',
 ];
@@ -66,6 +70,8 @@ const APPLICATION_KEYWORDS = [
   "application has been received",
   "thank you for applying",
   "thanks for applying",
+  "thank you for your application",
+  "thank you for including",
   "application has been submitted",
   "we have received",
   "we've received",
@@ -77,6 +83,9 @@ const APPLICATION_KEYWORDS = [
   "excited to learn more about you",
   "your profile is a good fit",
   "in the process of reviewing",
+  "carefully review your application",
+  "review your application",
+  "we'll review your application",
 ];
 
 // ============================================================
@@ -187,6 +196,8 @@ function extractCompany_(from, subject, body) {
   const atPatterns = [
     // "applying to Meta", "Thank you for applying to Notion"
     /applying to\s+([A-Z][A-Za-z0-9]+)\b/i,
+    // "including GitHub in your job search"
+    /including\s+([A-Z][A-Za-z0-9]+)\s+in your/i,
     // "position at Affirm!", "role at Stripe." — strongest company signal
     /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+)\b/i,
     // "interest in Datadog!", "interest in Notion!"
@@ -218,7 +229,7 @@ function extractCompany_(from, subject, body) {
     const generic = ["gmail", "yahoo", "outlook", "hotmail", "greenhouse", "lever", "ashby",
                      "smartrecruiters", "workday", "icims", "jobvite", "myworkdayjobs",
                      "successfactors", "taleo", "brassring", "google", "icloud",
-                     "facebookrecruiting", "recruiting", "us"];
+                     "facebookrecruiting", "recruiting", "us", "talent"];
     if (!generic.includes(domain)) {
       // Clean up domain: strip common suffixes (hq, inc, corp, io, jobs)
       let name = domain.replace(/(?:hq|inc|corp|jobs|careers|mail)$/i, "");
