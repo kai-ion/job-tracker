@@ -213,9 +213,11 @@ function extractCompany_(from, subject, body) {
     const generic = ["gmail", "yahoo", "outlook", "hotmail", "greenhouse", "lever", "ashby",
                      "smartrecruiters", "workday", "icims", "jobvite", "myworkdayjobs",
                      "successfactors", "taleo", "brassring", "google", "icloud",
-                     "facebookrecruiting", "recruiting"];
+                     "facebookrecruiting", "recruiting", "us"];
     if (!generic.includes(domain)) {
-      return capitalize_(domain);
+      // Clean up domain: strip common suffixes (hq, inc, corp, io, jobs)
+      let name = domain.replace(/(?:hq|inc|corp|jobs|careers|mail)$/i, "");
+      return capitalize_(name);
     }
   }
 
@@ -236,19 +238,19 @@ function extractRole_(subject, body) {
   const text = subject + "\n" + body;
   const patterns = [
     // "applying for the Software Engineer II, Backend (Merchant Advocacy) position"
-    /(?:applying for|applied for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening)\b/i,
+    /(?:applying for|applied for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
     // "application for Software Engineer - Delivery Platform role"
-    /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening)\b/i,
-    // "application for the Software Engineer role" or "application for Software Engineer"
+    /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
+    // "application for the Software Engineer role" or "application for Software Engineer has been..."
     /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has|\s+was|\s+and\b|\.\s|\n)/i,
     // "for the Senior SDE position"
-    /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening)\b/i,
+    /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
     // Subject: "... for the Business Engineer, Business Agents role"
-    /(?:for the)\s+(.+?)\s+role\b/i,
+    /(?:for the)\s+(.+?)\s+(?:role|job)\b/i,
     // "position: Software Engineer" or "role: Software Engineer"
     /(?:position|role|job):\s*(.+?)(?:\n|$)/i,
     // "regarding the Staff Engineer opening"
-    /(?:regarding the)\s+(.+?)\s+(?:position|role|opening)\b/i,
+    /(?:regarding the)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
   ];
 
   for (const pattern of patterns) {
