@@ -20,13 +20,18 @@ const SHEET_NAME = "Applications";
 const CHECK_INTERVAL_MINUTES = 5;
 
 // Gmail search queries for application confirmations
+// Using body search (no subject: prefix) to catch all variations
 const APPLICATION_QUERIES = [
-  'subject:"application received" newer_than:1d',
-  'subject:"thank you for applying" newer_than:1d',
-  'subject:"application confirmation" newer_than:1d',
-  'subject:"we received your application" newer_than:1d',
-  'subject:"application submitted" newer_than:1d',
-  'subject:"thanks for applying" newer_than:1d',
+  '"thank you for applying" newer_than:2d',
+  '"thanks for applying" newer_than:2d',
+  '"application received" newer_than:2d',
+  '"received your application" newer_than:2d',
+  '"application has been received" newer_than:2d',
+  '"application confirmation" newer_than:2d',
+  '"application submitted" newer_than:2d',
+  '"we received your application" newer_than:2d',
+  '"excited to learn more about you" newer_than:2d',
+  '"in the process of reviewing" newer_than:2d',
 ];
 
 // Gmail search queries for rejections (search body too, not just subject,
@@ -58,12 +63,20 @@ const REJECTION_KEYWORDS = [
 // Keywords that confirm an application was received
 const APPLICATION_KEYWORDS = [
   "received your application",
+  "application has been received",
   "thank you for applying",
+  "thanks for applying",
   "application has been submitted",
   "we have received",
+  "we've received",
   "confirm your application",
   "successfully submitted",
   "thanks for your interest",
+  "thank you for your interest",
+  "appreciate your interest in joining",
+  "excited to learn more about you",
+  "your profile is a good fit",
+  "in the process of reviewing",
 ];
 
 // ============================================================
@@ -168,33 +181,24 @@ function extractApplicationInfo_(message) {
 }
 
 function extractCompany_(from, subject, body) {
-  // Try from email domain first (e.g., "noreply@stripe.com" → Stripe)
-  const domainMatch = from.match(/@([a-z0-9-]+)\./i);
-  if (domainMatch) {
-    const domain = domainMatch[1].toLowerCase();
-    // Skip generic email providers and ATS platforms
-    const generic = ["gmail", "yahoo", "outlook", "hotmail", "greenhouse", "lever", "ashby",
-                     "smartrecruiters", "workday", "icims", "jobvite", "myworkdayjobs",
-                     "successfactors", "taleo", "brassring", "google", "icloud"];
-    if (!generic.includes(domain)) {
-      return capitalize_(domain);
-    }
-  }
-
   const text = subject + "\n" + body;
 
-  // Try "at [Company]" patterns — stop at common sentence continuations
+  // PRIORITY 1: Extract from subject/body — most reliable when present
+  // Patterns like "applying to Meta", "application at Stripe", "with Google"
   const atPatterns = [
-    /(?:application (?:at|to|for))\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\s+for|\s+has|\s+was|\.|,|\n|!|\s+and\b)/,
+    /applying to\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\n|$|!)/i,
+    /application (?:at|to|for|with)\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\s+for|\s+has|\s+was|\.|,|\n|!)/i,
+    /(?:applying|applied) (?:at|to|for|with)\s+([A-Z][A-Za-z0-9&.-]+)/i,
+    /career (?:journey|profile) with\s+([A-Z][A-Za-z0-9&.-]+)/i,
     /(?:at|with)\s+([A-Z][A-Za-z0-9&.-]+)(?:\s|\.|\,|\n|!|$)/,
     /(?:from)\s+([A-Z][A-Za-z0-9&.-]+?)(?:\s+regarding|\s+about|\.|,|\n|!|$)/,
   ];
   for (const pattern of atPatterns) {
     const match = text.match(pattern);
     if (match) {
-      let name = match[1].trim().replace(/[.\s]+$/, ""); // Strip trailing periods/spaces
+      let name = match[1].trim().replace(/[.\s]+$/, "");
       if (name.length > 1 && name.length < 40) {
-        const reject = ["this", "that", "the", "our", "your", "unfortunately", "time"];
+        const reject = ["this", "that", "the", "our", "your", "unfortunately", "time", "us"];
         if (!reject.includes(name.toLowerCase())) {
           return name;
         }
@@ -202,11 +206,23 @@ function extractCompany_(from, subject, body) {
     }
   }
 
-  // Try the display name from the From field
+  // PRIORITY 2: From email domain (e.g., "noreply@stripe.com" → Stripe)
+  const domainMatch = from.match(/@([a-z0-9-]+)\./i);
+  if (domainMatch) {
+    const domain = domainMatch[1].toLowerCase();
+    const generic = ["gmail", "yahoo", "outlook", "hotmail", "greenhouse", "lever", "ashby",
+                     "smartrecruiters", "workday", "icims", "jobvite", "myworkdayjobs",
+                     "successfactors", "taleo", "brassring", "google", "icloud",
+                     "facebookrecruiting", "recruiting"];
+    if (!generic.includes(domain)) {
+      return capitalize_(domain);
+    }
+  }
+
+  // PRIORITY 3: Display name from the From field
   const nameMatch = from.match(/^"?([^"<]+)"?\s*</);
   if (nameMatch) {
     let name = nameMatch[1].trim();
-    // Remove common suffixes like "Careers", "Recruiting", "Talent"
     name = name.replace(/\s*(Careers|Recruiting|Talent|HR|Jobs|Hiring|Team)\s*$/i, "").trim();
     if (name.length > 2 && name.length < 50) {
       return name;
@@ -217,19 +233,30 @@ function extractCompany_(from, subject, body) {
 }
 
 function extractRole_(subject, body) {
-  // Try patterns like "for the [Role] position" or "role: [Role]"
+  const text = subject + "\n" + body;
   const patterns = [
-    /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening)/i,
+    // "applying for the Software Engineer II, Backend (Merchant Advocacy) position"
+    /(?:applying for|applied for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening)\b/i,
+    // "application for Software Engineer - Delivery Platform role"
+    /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening)\b/i,
+    // "application for the Software Engineer role" or "application for Software Engineer"
+    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has|\s+was|\s+and\b|\.\s|\n)/i,
+    // "for the Senior SDE position"
+    /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening)\b/i,
+    // Subject: "... for the Business Engineer, Business Agents role"
+    /(?:for the)\s+(.+?)\s+role\b/i,
+    // "position: Software Engineer" or "role: Software Engineer"
     /(?:position|role|job):\s*(.+?)(?:\n|$)/i,
-    /applied (?:for|to)\s+(?:the\s+)?(.+?)(?:\s+position|\s+role|\s+at|\s*[.\n])/i,
-    /(?:your application for)\s+(.+?)(?:\s+has|\s+was|\s*[.\n])/i,
-    /(?:regarding the)\s+(.+?)\s+(?:position|role|opening)/i,
+    // "regarding the Staff Engineer opening"
+    /(?:regarding the)\s+(.+?)\s+(?:position|role|opening)\b/i,
   ];
 
   for (const pattern of patterns) {
-    const match = (subject + "\n" + body).match(pattern);
-    if (match && match[1].length < 80) {
-      return match[1].trim();
+    const match = text.match(pattern);
+    if (match && match[1].length > 2 && match[1].length < 80) {
+      // Clean up: remove trailing "at CompanyName" if captured
+      let role = match[1].trim().replace(/\s+at\s+\S+.*$/i, "");
+      return role;
     }
   }
 
