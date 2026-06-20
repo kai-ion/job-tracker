@@ -185,25 +185,25 @@ function extractCompany_(from, subject, body) {
 
   // PRIORITY 1: Extract from subject/body — most reliable when present
   const atPatterns = [
-    // "applying to Meta", "applying to Databricks!"
-    /applying to\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\n|$|!)/i,
-    // "position at Affirm", "role at Stripe" — strongest company signal
-    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9&.\s-]+?)(?:[.!,\n]|\s+and\b|\s+We)/i,
-    // "interest in Datadog", "interest in joining Stripe"
-    /interest in (?:joining\s+)?([A-Z][A-Za-z0-9&.-]+)/i,
-    // "applying for...at Affirm" (company after "at" near end)
-    /at\s+([A-Z][A-Za-z0-9&.\s-]+?)(?:[.!,\n]|\s+We|\s+Our|\s+Your)/i,
+    // "applying to Meta", "Thank you for applying to Notion"
+    /applying to\s+([A-Z][A-Za-z0-9]+)\b/i,
+    // "position at Affirm!", "role at Stripe." — strongest company signal
+    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+)\b/i,
+    // "interest in Datadog!", "interest in Notion!"
+    /interest in\s+([A-Z][A-Za-z0-9]+)[.!,\s]/i,
+    // Multi-word: "applying to Goldman Sachs" or "at JP Morgan"
+    /applying to\s+([A-Z][A-Za-z0-9]+(?: [A-Z][A-Za-z0-9]+)*)/,
+    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?: [A-Z][A-Za-z0-9]+)*)/,
     // "career journey with Meta"
-    /career (?:journey|profile) with\s+([A-Z][A-Za-z0-9&.-]+)/i,
-    // Fallback: "from Robinhood" in body
-    /(?:from)\s+([A-Z][A-Za-z0-9&.-]+?)(?:\s+regarding|\s+about|[.!,\n]|$)/,
+    /career (?:journey|profile) with\s+([A-Z][A-Za-z0-9]+)\b/i,
   ];
   for (const pattern of atPatterns) {
     const match = text.match(pattern);
     if (match) {
       let name = match[1].trim().replace(/[.\s]+$/, "");
       if (name.length > 1 && name.length < 40) {
-        const reject = ["this", "that", "the", "our", "your", "unfortunately", "time", "us"];
+        const reject = ["this", "that", "the", "our", "your", "unfortunately", "time", "us",
+                       "our team", "the team", "my", "a", "an"];
         if (!reject.includes(name.toLowerCase())) {
           return name;
         }
@@ -413,6 +413,15 @@ function deleteExistingTriggers_() {
       ScriptApp.deleteTrigger(trigger);
     }
   }
+}
+
+/**
+ * Clear all processed email IDs so emails can be reprocessed.
+ * Run this after fixing bugs to re-scan emails that were previously skipped.
+ */
+function resetProcessed() {
+  PropertiesService.getScriptProperties().deleteProperty("processedIds");
+  Logger.log("Processed IDs cleared. Run processNewEmails to rescan.");
 }
 
 
