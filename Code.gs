@@ -184,14 +184,19 @@ function extractCompany_(from, subject, body) {
   const text = subject + "\n" + body;
 
   // PRIORITY 1: Extract from subject/body — most reliable when present
-  // Patterns like "applying to Meta", "application at Stripe", "with Google"
   const atPatterns = [
+    // "applying to Meta", "applying to Databricks!"
     /applying to\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\n|$|!)/i,
-    /application (?:at|to|for|with)\s+([A-Z][A-Za-z0-9\s&.-]{1,40}?)(?:\s+for|\s+has|\s+was|\.|,|\n|!)/i,
-    /(?:applying|applied) (?:at|to|for|with)\s+([A-Z][A-Za-z0-9&.-]+)/i,
+    // "position at Affirm", "role at Stripe" — strongest company signal
+    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9&.\s-]+?)(?:[.!,\n]|\s+and\b|\s+We)/i,
+    // "interest in Datadog", "interest in joining Stripe"
+    /interest in (?:joining\s+)?([A-Z][A-Za-z0-9&.-]+)/i,
+    // "applying for...at Affirm" (company after "at" near end)
+    /at\s+([A-Z][A-Za-z0-9&.\s-]+?)(?:[.!,\n]|\s+We|\s+Our|\s+Your)/i,
+    // "career journey with Meta"
     /career (?:journey|profile) with\s+([A-Z][A-Za-z0-9&.-]+)/i,
-    /(?:at|with)\s+([A-Z][A-Za-z0-9&.-]+)(?:\s|\.|\,|\n|!|$)/,
-    /(?:from)\s+([A-Z][A-Za-z0-9&.-]+?)(?:\s+regarding|\s+about|\.|,|\n|!|$)/,
+    // Fallback: "from Robinhood" in body
+    /(?:from)\s+([A-Z][A-Za-z0-9&.-]+?)(?:\s+regarding|\s+about|[.!,\n]|$)/,
   ];
   for (const pattern of atPatterns) {
     const match = text.match(pattern);
