@@ -19,29 +19,31 @@ Automatically tracks job applications and rejections from Gmail into a Google Sh
 | Meta | SWE | 2026-06-05 | Yes | 2026-06-18 | Applied |
 | Google | Staff Eng | 2026-06-12 | | | Phone Screen |
 
-## Setup
+## Setup (one-click)
 
-1. Create a new Google Sheet
-2. Go to **Extensions → Apps Script**
-3. In the script editor, go to **Settings (gear icon) → Script ID** — copy it
-4. Locally:
+1. **[Click here to make a copy of the template](https://docs.google.com/spreadsheets/d/1FFnhnMLu72CPy3UhypF7zin0r7JleOVKXGBP7aPQhYs/copy)** — this gives you your own Sheet + script
+2. In your copied Sheet, go to **Extensions → Apps Script**
+3. Select `setup` from the function dropdown → click ▶️ Run
+4. Grant permissions when prompted (Gmail read + Sheets write)
+5. Done — runs automatically every 5 minutes against your Gmail
+
+Your data stays completely private in your own Google Drive.
+
+### Alternative: clone from GitHub
+
+If you prefer version control:
+
+1. Create a new Google Sheet → **Extensions → Apps Script** → copy the Script ID from Settings
+2. Locally:
    ```bash
    npm install -g @google/clasp
    clasp login
-   ```
-5. Clone and push:
-   ```bash
    git clone git@github.com:kai-ion/job-tracker.git
    cd job-tracker
    echo '{"scriptId":"YOUR_SCRIPT_ID","rootDir":"."}' > .clasp.json
    clasp push --force
    ```
-6. Back in Apps Script: Run `setup()` → grant permissions
-7. Done — runs automatically every 5 minutes
-
-### Alternative: manual paste
-
-If you don't want to use clasp, copy the contents of `Code.gs` into the Apps Script editor and run `setup()`.
+3. Back in Apps Script: Run `setup()` → grant permissions
 
 ## Detection patterns
 
