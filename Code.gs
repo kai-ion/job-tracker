@@ -41,20 +41,26 @@ const APPLICATION_QUERIES = [
 // Gmail search queries for rejections (search body too, not just subject,
 // because rejections often come as replies in the application thread)
 const REJECTION_QUERIES = [
-  '"unfortunately" newer_than:1d',
-  '"we will not be moving forward" newer_than:1d',
-  '"not moving forward" newer_than:1d',
-  '"decided to move forward with other" newer_than:1d',
-  '"position has been filled" newer_than:1d',
-  '"after careful consideration" newer_than:1d',
-  'subject:"update on your application" newer_than:1d',
+  '"unfortunately" newer_than:2d',
+  '"we will not be moving forward" newer_than:2d',
+  '"not moving forward" newer_than:2d',
+  '"not to move forward" newer_than:2d',
+  '"decided to move forward with other" newer_than:2d',
+  '"decided not to move forward" newer_than:2d',
+  '"position has been filled" newer_than:2d',
+  '"after careful consideration" newer_than:2d',
+  '"we have decided" newer_than:2d',
+  'subject:"update on your application" newer_than:2d',
+  'subject:"your application" newer_than:2d -"received" -"submitted"',
 ];
 
 // Keywords in email body that confirm rejection
 const REJECTION_KEYWORDS = [
   "unfortunately",
   "not moving forward",
+  "not to move forward",
   "decided to pursue other",
+  "decided not to move forward",
   "will not be moving forward",
   "position has been filled",
   "not a match",
@@ -62,6 +68,8 @@ const REJECTION_KEYWORDS = [
   "we regret",
   "unable to offer",
   "not selected",
+  "we have decided",
+  "will not be proceeding",
 ];
 
 // Keywords that confirm an application was received
