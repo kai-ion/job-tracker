@@ -287,12 +287,12 @@ function extractRole_(subject, body) {
   const text = subject + "\n" + body;
   const patterns = [
     // "applying for the Software Engineer II, Backend (Merchant Advocacy) position"
-    /(?:applying for|applied for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
+    /(?:applying for|applied for)\s+(?:the\s+)?(?!a\s)(.+?)\s+(?:position|role|opening|job)\b/i,
     // "application for Software Engineer - Delivery Platform role"
     /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
-    // "application for the Software Engineer role" or "application for Software Engineer has been..."
-    // Also handles "application for Senior Software Engineer (Job number: ...)"
-    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has|\s+was|\s+and\b|\.\s|\n|\s*\()/i,
+    // "application for Senior Software Engineer (Job number: ...)" or "...has been received"
+    // Use \( or period-space or "has/was" as terminators (NOT \n — roles wrap across lines)
+    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has\b|\s+was\b|\s+and\b|\.\s|\s*\()/i,
     // "for the Senior SDE position"
     /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
     // Subject: "... for the Business Engineer, Business Agents role"
@@ -303,15 +303,19 @@ function extractRole_(subject, body) {
     /(?:regarding the)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
   ];
 
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
+  for (let i = 0; i < patterns.length; i++) {
+    const match = text.match(patterns[i]);
     if (match && match[1].length > 2 && match[1].length < 80) {
-      // Clean up: remove trailing "at CompanyName" if captured
       let role = match[1].trim().replace(/\s+at\s+\S+.*$/i, "");
+      // Skip if it looks like a requisition number, generic phrase, or too short
+      if (/^[A-Z]?\d+$/.test(role)) continue;  // "R168187", "200038993"
+      if (/^(a new|a |an |the )/.test(role.toLowerCase())) continue;  // "a new", "the"
+      Logger.log("extractRole_ matched pattern " + i + ": \"" + role + "\"");
       return role;
     }
   }
 
+  Logger.log("extractRole_ NO MATCH for text starting: " + text.substring(0, 100));
   return "";
 }
 
