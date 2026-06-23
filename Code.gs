@@ -421,10 +421,12 @@ function findRowByCompanyAndRole_(sheet, company, role) {
     const rowCompany = String(data[i][0]).toLowerCase();
     const rowRole = String(data[i][1]).toLowerCase();
     if (rowCompany === company.toLowerCase()) {
-      // Same company: if role matches OR either role is empty, it's a duplicate
-      if (!role || !rowRole || rowRole === role.toLowerCase()) {
+      // Same company + same role = duplicate
+      if (role && rowRole && rowRole === role.toLowerCase()) {
         return i + 1;
       }
+      // Both roles empty = can't distinguish, but still allow
+      // (user may have applied to multiple roles at same company)
     }
   }
   return null;
