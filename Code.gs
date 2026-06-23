@@ -88,6 +88,7 @@ const APPLICATION_KEYWORDS = [
   "thanks for applying",
   "thank you for your application",
   "thank you for including",
+  "submit your application",
   "application has been submitted",
   "we have received",
   "we've received",
@@ -96,12 +97,14 @@ const APPLICATION_KEYWORDS = [
   "thanks for your interest",
   "thank you for your interest",
   "appreciate your interest in joining",
+  "interested in a career at",
   "excited to learn more about you",
   "your profile is a good fit",
   "in the process of reviewing",
   "carefully review your application",
   "review your application",
   "we'll review your application",
+  "being evaluated",
 ];
 
 // ============================================================
@@ -233,6 +236,8 @@ function extractCompany_(from, subject, body) {
     /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
     // "interest in Datadog!", "interest in Notion!"
     /interest in\s+([A-Z][A-Za-z0-9]+)[.!,\s]/i,
+    // "career at Microsoft", "interested in a career at Google"
+    /career at\s+([A-Z][A-Za-z0-9]+)/i,
     // "career journey with Meta"
     /career (?:journey|profile) with\s+([A-Z][A-Za-z0-9]+)\b/i,
   ];
