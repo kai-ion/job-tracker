@@ -228,8 +228,8 @@ function extractCompany_(from, subject, body) {
 
   // PRIORITY 1: Extract from subject/body — most reliable when present
   const atPatterns = [
-    // "applying to Meta", "applying to Goldman Sachs"
-    /applying to\s+([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
+    // "applying to Meta", "applying to Goldman Sachs" (but NOT "applying to the ... position")
+    /applying to\s+(?!the\s)([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
     // "including GitHub in your job search"
     /including\s+([A-Z][A-Za-z0-9]+)\s+in your/i,
     // "role at Weights & Biases", "position at Affirm"
@@ -354,30 +354,32 @@ function updateStatus_(sheet, company, status, messageId, subject) {
   const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
   const companyLower = company.toLowerCase();
 
-  // Find matching row: exact match first, then contains match
+  // Find matching row (any status — including already rejected)
   let matchRow = -1;
   for (let i = 1; i < data.length; i++) {
-    if (data[i][3]) continue; // Already rejected, skip
     const rowCompany = String(data[i][0]).toLowerCase();
     if (rowCompany === companyLower) {
       matchRow = i;
       break;
     }
-    // Fuzzy: one contains the other (handles "TestCompany" vs "Testcompany Inc")
     if (rowCompany.includes(companyLower) || companyLower.includes(rowCompany)) {
       matchRow = i;
       break;
     }
   }
 
-  if (matchRow >= 0 && status === "Rejected") {
-    sheet.getRange(matchRow + 1, 4).setValue("Yes");   // Rejection
-    sheet.getRange(matchRow + 1, 5).setValue(today);   // Date Rejected
+  if (matchRow >= 0) {
+    // Row exists — update it if not already rejected
+    if (!data[matchRow][3] && status === "Rejected") {
+      sheet.getRange(matchRow + 1, 4).setValue("Yes");   // Rejection
+      sheet.getRange(matchRow + 1, 5).setValue(today);   // Date Rejected
+    }
+    // Either way, it's handled — don't create a duplicate
     markProcessed_(messageId);
     return;
   }
 
-  // If no existing row found, add as a new rejected entry
+  // No existing row — create a new rejected entry
   sheet.appendRow([
     company,
     "",      // Role unknown
