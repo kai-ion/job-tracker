@@ -211,11 +211,11 @@ function extractCompany_(from, subject, body) {
   // PRIORITY 1: Extract from subject/body — most reliable when present
   const atPatterns = [
     // "applying to Meta", "applying to Goldman Sachs"
-    /applying to\s+([A-Z][A-Za-z0-9]+(?: [&A-Z][A-Za-z0-9]+)*)/i,
+    /applying to\s+([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
     // "including GitHub in your job search"
     /including\s+([A-Z][A-Za-z0-9]+)\s+in your/i,
     // "role at Weights & Biases", "position at Affirm"
-    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?: [&A-Z][A-Za-z0-9]+)*)/i,
+    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
     // "interest in Datadog!", "interest in Notion!"
     /interest in\s+([A-Z][A-Za-z0-9]+)[.!,\s]/i,
     // "career journey with Meta"
