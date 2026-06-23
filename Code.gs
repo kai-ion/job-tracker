@@ -210,17 +210,14 @@ function extractCompany_(from, subject, body) {
 
   // PRIORITY 1: Extract from subject/body — most reliable when present
   const atPatterns = [
-    // "applying to Meta", "Thank you for applying to Notion"
-    /applying to\s+([A-Z][A-Za-z0-9]+)\b/i,
+    // "applying to Meta", "applying to Goldman Sachs"
+    /applying to\s+([A-Z][A-Za-z0-9]+(?: [&A-Z][A-Za-z0-9]+)*)/i,
     // "including GitHub in your job search"
     /including\s+([A-Z][A-Za-z0-9]+)\s+in your/i,
-    // "position at Affirm!", "role at Stripe." — strongest company signal
-    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+)\b/i,
+    // "role at Weights & Biases", "position at Affirm"
+    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?: [&A-Z][A-Za-z0-9]+)*)/i,
     // "interest in Datadog!", "interest in Notion!"
     /interest in\s+([A-Z][A-Za-z0-9]+)[.!,\s]/i,
-    // Multi-word: "applying to Goldman Sachs" or "at JP Morgan"
-    /applying to\s+([A-Z][A-Za-z0-9]+(?: [A-Z][A-Za-z0-9]+)*)/,
-    /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?: [A-Z][A-Za-z0-9]+)*)/,
     // "career journey with Meta"
     /career (?:journey|profile) with\s+([A-Z][A-Za-z0-9]+)\b/i,
   ];
