@@ -156,6 +156,11 @@ function processNewEmails() {
         processed.add(msgId); // Mark immediately to prevent duplicates within same run
 
         const body = msg.getPlainBody();
+        // Skip if this is actually a rejection (some rejections contain application-like phrases)
+        if (isRejectionEmail_(body)) {
+          markProcessed_(msgId);
+          continue;
+        }
         if (isApplicationEmail_(body)) {
           const info = extractApplicationInfo_(msg);
           if (info.company) {
@@ -227,7 +232,7 @@ function extractCompany_(from, subject, body) {
       let name = match[1].trim().replace(/[.\s]+$/, "");
       if (name.length > 1 && name.length < 40) {
         const reject = ["this", "that", "the", "our", "your", "unfortunately", "time", "us",
-                       "our team", "the team", "my", "a", "an"];
+                       "our team", "the team", "this time", "my", "a", "an"];
         if (!reject.includes(name.toLowerCase())) {
           return name;
         }
