@@ -348,7 +348,7 @@ function extractSource_(from, body) {
 // ============================================================
 
 function addApplication_(sheet, info, messageId) {
-  const existing = findRow_(sheet, info.company);
+  const existing = findRowByCompanyAndRole_(sheet, info.company, info.role);
   if (existing) return; // Already tracked
 
   sheet.appendRow([
@@ -408,8 +408,23 @@ function updateStatus_(sheet, company, status, messageId, subject) {
 function findRow_(sheet, company) {
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toLowerCase() === company.toLowerCase()) {
+    if (String(data[i][0]).toLowerCase() === company.toLowerCase()) {
       return i + 1;
+    }
+  }
+  return null;
+}
+
+function findRowByCompanyAndRole_(sheet, company, role) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    const rowCompany = String(data[i][0]).toLowerCase();
+    const rowRole = String(data[i][1]).toLowerCase();
+    if (rowCompany === company.toLowerCase()) {
+      // Same company: if role matches OR either role is empty, it's a duplicate
+      if (!role || !rowRole || rowRole === role.toLowerCase()) {
+        return i + 1;
+      }
     }
   }
   return null;
