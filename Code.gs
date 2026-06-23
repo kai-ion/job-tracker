@@ -284,10 +284,17 @@ function extractCompany_(from, subject, body) {
 }
 
 function extractRole_(subject, body) {
-  const text = subject + "\n" + body;
+  // Clean body: collapse multiple whitespace into single spaces, strip image tags
+  // Keep subject and body separate to avoid cross-contamination
+  const cleanBody = body
+    .replace(/\[image:[^\]]*\]/g, "")
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const text = subject + "\n" + cleanBody;
   const patterns = [
-    // "applying for the Software Engineer II, Backend (Merchant Advocacy) position"
-    /(?:applying for|applied for)\s+(?:the\s+)?(?!a\s)(.+?)\s+(?:position|role|opening|job)\b/i,
+    // "applying for/to the Software Engineer II, Backend (Merchant Advocacy) position/role"
+    /(?:applying (?:for|to)|applied (?:for|to))\s+(?:the\s+)?(?!a\s)(.+?)\s+(?:position|role|opening|job)\b/i,
     // "application for Software Engineer - Delivery Platform role"
     /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
     // "application for Senior Software Engineer (Job number: ...)" or "...has been received"
@@ -306,10 +313,13 @@ function extractRole_(subject, body) {
   for (let i = 0; i < patterns.length; i++) {
     const match = text.match(patterns[i]);
     if (match && match[1].length > 2 && match[1].length < 80) {
-      let role = match[1].trim().replace(/\s+at\s+\S+.*$/i, "");
-      // Skip if it looks like a requisition number, generic phrase, or too short
-      if (/^[A-Z]?\d+$/.test(role)) continue;  // "R168187", "200038993"
-      if (/^(a new|a |an |the )/.test(role.toLowerCase())) continue;  // "a new", "the"
+      let role = match[1].trim()
+        .replace(/\s+at\s+\S+.*$/i, "")      // Remove "at CompanyName" suffix
+        .replace(/^[A-Z]?\d+\s*[-–]\s*/, "") // Strip requisition prefix "R168187 - "
+        .replace(/[,.\s]+$/, "");             // Strip trailing commas, periods, spaces
+      // Skip if it looks like just a requisition number or generic phrase
+      if (/^[A-Z]?\d+$/.test(role)) continue;
+      if (/^(a new|a |an |the )/.test(role.toLowerCase())) continue;
       Logger.log("extractRole_ matched pattern " + i + ": \"" + role + "\"");
       return role;
     }
