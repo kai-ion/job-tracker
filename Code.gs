@@ -291,7 +291,8 @@ function extractRole_(subject, body) {
     // "application for Software Engineer - Delivery Platform role"
     /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
     // "application for the Software Engineer role" or "application for Software Engineer has been..."
-    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has|\s+was|\s+and\b|\.\s|\n)/i,
+    // Also handles "application for Senior Software Engineer (Job number: ...)"
+    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has|\s+was|\s+and\b|\.\s|\n|\s*\()/i,
     // "for the Senior SDE position"
     /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
     // Subject: "... for the Business Engineer, Business Agents role"
