@@ -160,9 +160,15 @@ function processNewEmails() {
         processed.add(msgId); // Mark immediately to prevent duplicates within same run
 
         const body = msg.getPlainBody();
-        // Skip if this is actually a rejection (some rejections contain application-like phrases)
+        // If it's a rejection, handle it as a rejection right here (don't skip it —
+        // the rejection loop won't see it since we already marked it processed)
         if (isRejectionEmail_(body)) {
-          markProcessed_(msgId);
+          const info = extractApplicationInfo_(msg);
+          if (info.company) {
+            updateStatus_(sheet, info.company, "Rejected", msgId, msg.getSubject());
+          } else {
+            markProcessed_(msgId);
+          }
           continue;
         }
         if (isApplicationEmail_(body)) {
