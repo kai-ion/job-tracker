@@ -25,13 +25,16 @@ const APPLICATION_QUERIES = [
   '"thank you for applying" newer_than:2d',
   '"thanks for applying" newer_than:2d',
   '"thank you for your application" newer_than:2d',
+  '"thanks for your application" newer_than:2d',
   '"thank you for including" newer_than:2d',
+  '"got your application" newer_than:2d',
   '"application received" newer_than:2d',
   '"received your application" newer_than:2d',
   '"application has been received" newer_than:2d',
   '"application confirmation" newer_than:2d',
   '"application submitted" newer_than:2d',
   '"we received your application" newer_than:2d',
+  '"submit your application" newer_than:2d',
   '"review your application" newer_than:2d',
   '"carefully review your application" newer_than:2d',
   '"excited to learn more about you" newer_than:2d',
@@ -88,6 +91,7 @@ const APPLICATION_KEYWORDS = [
   "thanks for applying",
   "thank you for your application",
   "thank you for including",
+  "got your application",
   "submit your application",
   "application has been submitted",
   "we have received",
@@ -228,8 +232,8 @@ function extractCompany_(from, subject, body) {
 
   // PRIORITY 1: Extract from subject/body — most reliable when present
   const atPatterns = [
-    // "applying to Meta", "applying to Goldman Sachs" (but NOT "applying to the ... position")
-    /applying to\s+(?!the\s)([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
+    // "applying to Meta", "application to Spotify", "applying to Goldman Sachs"
+    /(?:applying|application) to\s+(?!the\s)([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
     // "including GitHub in your job search"
     /including\s+([A-Z][A-Za-z0-9]+)\s+in your/i,
     // "role at Weights & Biases", "position at Affirm"
