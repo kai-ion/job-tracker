@@ -251,7 +251,7 @@ function extractCompany_(from, subject, body) {
       let name = match[1].trim().replace(/[.\s]+$/, "");
       if (name.length > 1 && name.length < 40) {
         const reject = ["this", "that", "the", "our", "your", "unfortunately", "time", "us",
-                       "our team", "the team", "this time", "my", "a", "an"];
+                       "our team", "the team", "this time", "my", "a", "an", "joining"];
         if (!reject.includes(name.toLowerCase())) {
           return name;
         }
@@ -302,8 +302,8 @@ function extractRole_(subject, body) {
     // "application for Software Engineer - Delivery Platform role"
     /(?:application for)\s+(?:the\s+)?(.+?)\s+(?:position|role|opening|job)\b/i,
     // "application for Senior Software Engineer (Job number: ...)" or "...has been received"
-    // Use \( or period-space or "has/was" as terminators (NOT \n — roles wrap across lines)
-    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has\b|\s+was\b|\s+and\b|\.\s|\s*\()/i,
+    // Use \( or "has/was" as terminators (NOT period — breaks on "Sr. Software Engineer")
+    /(?:application for)\s+(?:the\s+)?(.+?)(?:\s+has\b|\s+was\b|\s+and we\b|\s*\()/i,
     // "for the Senior SDE position"
     /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
     // Subject: "... for the Business Engineer, Business Agents role"
