@@ -238,6 +238,8 @@ function extractCompany_(from, subject, body) {
     /including\s+([A-Z][A-Za-z0-9]+)\s+in your/i,
     // "role at Weights & Biases", "position at Affirm"
     /(?:position|role|job)\s+at\s+([A-Z][A-Za-z0-9]+(?:\s*[&]\s*[A-Za-z0-9]+| [A-Z][A-Za-z0-9]+)*)/i,
+    // "interest in joining Reddit", "interest in joining our team at Stripe"
+    /interest in joining\s+([A-Z][A-Za-z0-9]+)/i,
     // "interest in Datadog!", "interest in Notion!"
     /interest in\s+([A-Z][A-Za-z0-9]+)[.!,\s]/i,
     // "career at Microsoft", "interested in a career at Google"
