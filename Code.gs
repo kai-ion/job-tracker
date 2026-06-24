@@ -107,8 +107,12 @@ const APPLICATION_KEYWORDS = [
   "in the process of reviewing",
   "carefully review your application",
   "review your application",
+  "reviewing your application",
   "we'll review your application",
   "being evaluated",
+  "time to apply",
+  "interest in joining",
+  "showing interest in",
 ];
 
 // ============================================================
