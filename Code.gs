@@ -496,6 +496,9 @@ function isApplicationEmail_(body) {
 
 function isRejectionEmail_(body) {
   const lower = body.toLowerCase();
+  const excludes = ["office of representative", "congress", "constituent",
+                    "unsubscribe from marketing", "invoice", "receipt"];
+  if (excludes.some(ex => lower.includes(ex))) return false;
   return REJECTION_KEYWORDS.some(kw => lower.includes(kw));
 }
 
