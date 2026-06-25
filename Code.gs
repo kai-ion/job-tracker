@@ -175,6 +175,7 @@ function processNewEmails() {
         // the rejection loop won't see it since we already marked it processed)
         if (isRejectionEmail_(body)) {
           const info = extractApplicationInfo_(msg);
+          Logger.log("REJECTION detected: company=\"" + info.company + "\" subject=\"" + msg.getSubject().substring(0, 60) + "\"");
           if (info.company) {
             updateStatus_(sheet, info.company, "Rejected", msgId, msg.getSubject());
           } else {
@@ -378,27 +379,39 @@ function updateStatus_(sheet, company, status, messageId, subject) {
   const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
   const companyLower = company.toLowerCase();
 
-  // Find matching row (any status — including already rejected)
-  let matchRow = -1;
+  // Extract role from subject for precise matching (e.g., "Your application - Senior SWE at Datadog")
+  const roleFromSubject = extractRole_(subject, "");
+
+  // Find best matching row: prefer same company + same role + not yet rejected
+  let bestRow = -1;
+  let fallbackRow = -1; // any matching company row (even rejected)
   for (let i = 1; i < data.length; i++) {
     const rowCompany = String(data[i][0]).toLowerCase();
-    if (rowCompany === companyLower) {
-      matchRow = i;
-      break;
-    }
-    if (rowCompany.includes(companyLower) || companyLower.includes(rowCompany)) {
-      matchRow = i;
-      break;
+    const rowRole = String(data[i][1]).toLowerCase();
+    const isMatch = rowCompany === companyLower ||
+                    rowCompany.includes(companyLower) ||
+                    companyLower.includes(rowCompany);
+    if (!isMatch) continue;
+
+    if (fallbackRow < 0) fallbackRow = i;
+
+    // Prefer: not rejected + role matches
+    if (!data[i][3]) {
+      if (roleFromSubject && rowRole && rowRole === roleFromSubject.toLowerCase()) {
+        bestRow = i;
+        break;  // Exact role match, not rejected — perfect
+      }
+      if (bestRow < 0) bestRow = i;  // First non-rejected match
     }
   }
 
+  const matchRow = bestRow >= 0 ? bestRow : fallbackRow;
+
   if (matchRow >= 0) {
-    // Row exists — update it if not already rejected
     if (!data[matchRow][3] && status === "Rejected") {
       sheet.getRange(matchRow + 1, 4).setValue("Yes");   // Rejection
       sheet.getRange(matchRow + 1, 5).setValue(today);   // Date Rejected
     }
-    // Either way, it's handled — don't create a duplicate
     markProcessed_(messageId);
     return;
   }
