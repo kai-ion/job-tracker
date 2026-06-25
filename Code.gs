@@ -329,6 +329,7 @@ function extractRole_(subject, body) {
     const match = text.match(patterns[i]);
     if (match && match[1].length > 2 && match[1].length < 80) {
       let role = match[1].trim()
+        .replace(/^(our|the|a)\s+/i, "")     // Strip leading "our", "the", "a"
         .replace(/\s+at\s+\S+.*$/i, "")      // Remove "at CompanyName" suffix
         .replace(/^[A-Z]?\d+\s*[-–]\s*/, "") // Strip requisition prefix "R168187 - "
         .replace(/[,.\s]+$/, "");             // Strip trailing commas, periods, spaces
