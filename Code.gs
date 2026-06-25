@@ -315,6 +315,10 @@ function extractRole_(subject, body) {
     /(?:for the|for our)\s+(.+?)\s+(?:position|role|opening|job)\b/i,
     // Subject: "... for the Business Engineer, Business Agents role"
     /(?:for the)\s+(.+?)\s+(?:role|job)\b/i,
+    // Subject: "Your application - Senior SWE - Platform at Company"
+    /application\s*[-–]\s*(.+?)\s+at\s+/i,
+    // Body: "the Senior Software Engineer - Streaming Platform role"
+    /the\s+(.+?)\s+(?:position|role|opening|job)\b/i,
     // "position: Software Engineer" or "role: Software Engineer"
     /(?:position|role|job):\s*(.+?)(?:\n|$)/i,
     // "regarding the Staff Engineer opening"
@@ -483,6 +487,10 @@ function markProcessed_(messageId) {
 
 function isApplicationEmail_(body) {
   const lower = body.toLowerCase();
+  // Exclude non-job emails that happen to contain trigger phrases
+  const excludes = ["office of representative", "congress", "constituent",
+                    "unsubscribe from marketing", "invoice", "receipt"];
+  if (excludes.some(ex => lower.includes(ex))) return false;
   return APPLICATION_KEYWORDS.some(kw => lower.includes(kw));
 }
 
